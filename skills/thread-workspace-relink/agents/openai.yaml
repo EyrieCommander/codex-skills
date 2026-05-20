@@ -1,0 +1,4 @@
+interface:
+  display_name: "Thread Workspace Relink"
+  short_description: "Safely relink Codex thread workspace paths after folder renames."
+  default_prompt: "Relink Codex thread workspace paths from an old folder path to a new folder path with backups and verification."
