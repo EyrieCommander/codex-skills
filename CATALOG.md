@@ -2,7 +2,7 @@
 
 | Skill | Status | Origin | Source URL | License | Notes |
 | --- | --- | --- | --- | --- | --- |
-| `humanize-writing` | `release_ready_candidate` | Claude skill port/adaptation | https://github.com/blader/humanizer | MIT | Needs final NOTICE and wording scrub before copying. |
+| `humanize-writing` | `staged` | Claude skill port/adaptation | https://github.com/blader/humanizer | MIT | Copied with private voice prior removed; upstream metadata verified 2026-05-21. |
 | `startup-pressure-test` | `release_ready_candidate` | Local Codex skill | TBD | TBD | Needs provenance check before copying. |
 | `storyboard-review` | `release_ready_candidate` | Local Codex skill | TBD | TBD | May optionally pair with `codex-video-vision` for actual video review. |
 | `thread-workspace-relink` | `release_ready_candidate` | Codex skill from toolkit | https://github.com/Adam-Bull/Codex-thread-toolkit | MIT | Include only with backup-first warnings and NOTICE entry. |

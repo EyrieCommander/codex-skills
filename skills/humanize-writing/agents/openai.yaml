@@ -1,0 +1,3 @@
+display_name: Humanize Writing
+short_description: Make prose sound human without changing facts.
+default_prompt: 'Humanize this text while preserving facts, citations, and voice:'

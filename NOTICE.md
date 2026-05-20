@@ -4,7 +4,7 @@ This file will track upstream sources, ports, adaptations, and license notes for
 
 Initial known sources to review before publication:
 
-- `humanize-writing`: adapted from the MIT-licensed `blader/humanizer` Claude skill.
+- `humanize-writing`: adapted from the MIT-licensed [`blader/humanizer`](https://github.com/blader/humanizer) Claude Code skill. Upstream GitHub metadata was checked on 2026-05-21 and reported MIT.
 - `thread-workspace-relink`: sourced from the MIT-licensed `Adam-Bull/Codex-thread-toolkit`.
 - `video-perception`: adapted from the MIT-licensed `jordanrendric/claude-video-vision` workflow and paired with `EyrieCommander/codex-video-vision`.
 - `keep-codex-fast`: maintained upstream at `vibeforge1111/keep-codex-fast`; this repo should link, fork, or vendor intentionally rather than presenting it as original local work.
