@@ -2,29 +2,66 @@
 
 Portable Codex skills and workflow patterns maintained by EyrieCommander.
 
-This repo is a staging catalog, not a dumping ground. Skills should enter here only with clear provenance, license notes, portability status, and safety boundaries.
+This repo is a staging catalog, not a dumping ground. Skills enter here only with clear provenance, license notes, portability status, and safety boundaries.
 
-## Status Model
+## Release Posture
 
-- `release_ready`: ready to publish after final review.
-- `staged`: copied into this repo and scrubbed, but still waiting on repo-wide release review.
-- `draft`: useful, but still needs dogfooding, dependency notes, or sanitization.
-- `external_link`: maintained elsewhere; link, fork, or vendor intentionally.
-- `internal_only`: too specific to a private project or local operating system to publish as-is.
+This repository is currently a private `v0.1.0-preview` staging repo. The first goal is to make a small set of portable skills installable, documented, and provenance-clean before deciding whether to publish the repo.
 
-## Current Direction
-
-The first candidate set is intentionally small and provenance-first:
+Current ready set:
 
 - `humanize-writing`
 - `startup-pressure-test`
 - `storyboard-review`
 - `thread-workspace-relink`
 
-Other skills may be listed in the catalog before they are copied into `skills/`, but they should not be treated as release-ready until their row in `CATALOG.md` says so.
+Draft or linked candidates stay in the catalog until they pass dependency, privacy, and safety review.
 
-## Safety
+## Install A Skill Locally
 
-Do not include private workspace names, local paths, connector-derived material, client or employer details, repo internals, or user-specific examples in public artifacts unless they have been sanitized.
+Copy the skill folder into your Codex skills directory, then restart Codex or open a fresh session so the skill list reloads.
 
-Skills that mutate local Codex state, repo state, browser state, GitHub, email, or connector-backed data must default to report-only or approval-bound workflows.
+```sh
+mkdir -p "$HOME/.codex/skills"
+cp -R skills/humanize-writing "$HOME/.codex/skills/humanize-writing"
+```
+
+Replace `humanize-writing` with any skill folder in `skills/`. Do not install a draft skill into normal workflow until its catalog row says `ready` or you intentionally want to test it.
+
+## Status Model
+
+- `ready`: copied into this repo, scrubbed, covered by provenance/license notes, and suitable for private preview testing.
+- `draft`: useful, but still needs dogfooding, dependency notes, examples, or sanitization.
+- `external_link`: maintained elsewhere; link, fork, or vendor intentionally.
+- `internal_only`: too specific to a private project or local operating system to publish as-is.
+
+## Safety Rules
+
+Do not include private workspace names, local paths, connector-derived material, client or employer details, repo internals, or user-specific examples in public artifacts unless they have been intentionally sanitized.
+
+Skills that mutate local Codex state, repo state, browser state, GitHub, email, or connector-backed data must default to report-only, dry-run-first, or approval-bound workflows.
+
+## Skill Shape
+
+```text
+skills/<skill-name>/SKILL.md
+skills/<skill-name>/references/
+skills/<skill-name>/agents/openai.yaml
+```
+
+References and agent templates are optional. Keep each skill self-contained enough that a user can understand its trigger, workflow, dependencies, and safety boundary from the skill folder.
+
+## Release Checklist
+
+Before a public release:
+
+- verify `CATALOG.md` status and provenance for every included skill;
+- verify `NOTICE.md` includes third-party sources and adaptation notes;
+- run a private-path and private-example scrub;
+- install-test each `ready` skill from this repo into a clean Codex skills directory;
+- decide whether draft skills stay catalog-only or move into a separate branch;
+- tag a private preview before making the repo public.
+
+## License
+
+This repository is MIT licensed. Some skills are adapted from MIT-licensed upstream projects; see `NOTICE.md` and `CATALOG.md` for per-skill provenance.
