@@ -3,8 +3,8 @@
 | Skill | Status | Origin | Source URL | License | Notes |
 | --- | --- | --- | --- | --- | --- |
 | `humanize-writing` | `staged` | Claude skill port/adaptation | https://github.com/blader/humanizer | MIT | Copied with private voice prior removed; upstream metadata verified 2026-05-21. |
-| `startup-pressure-test` | `staged` | Local Codex skill | local authoring | TBD pending repo license | Copied after privacy scan; no upstream source found in Commander/PersonalOps provenance notes. |
-| `storyboard-review` | `release_ready_candidate` | Local Codex skill | TBD | TBD | May optionally pair with `codex-video-vision` for actual video review. |
+| `startup-pressure-test` | `staged` | Local Codex skill | local authoring | TBD pending repo license | Copied after privacy scan; no upstream source found during the packaging provenance pass. |
+| `storyboard-review` | `staged` | Local Codex skill | local authoring | TBD pending repo license | Copied after privacy scan; optional dependency on `video-perception` / `codex-video-vision` for actual video inspection. |
 | `thread-workspace-relink` | `release_ready_candidate` | Codex skill from toolkit | https://github.com/Adam-Bull/Codex-thread-toolkit | MIT | Include only with backup-first warnings and NOTICE entry. |
 | `video-perception` | `draft` | Claude video workflow adaptation plus Codex MCP/plugin | https://github.com/jordanrendric/claude-video-vision and https://github.com/EyrieCommander/codex-video-vision | MIT | Dependency-bound; skill alone is not install-complete. |
 | `source-intake` | `draft` | Local generalized workflow | TBD | TBD | Needs non-X dogfood pass and public-neutral examples. |

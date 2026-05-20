@@ -1,0 +1,4 @@
+interface:
+  display_name: "Storyboard Review"
+  short_description: "Compare a video render against its intended plan."
+  default_prompt: "Use $storyboard-review to compare this render against the storyboard or script."
