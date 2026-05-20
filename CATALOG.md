@@ -1,0 +1,23 @@
+# Catalog
+
+| Skill | Status | Origin | Source URL | License | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `humanize-writing` | `release_ready_candidate` | Claude skill port/adaptation | https://github.com/blader/humanizer | MIT | Needs final NOTICE and wording scrub before copying. |
+| `startup-pressure-test` | `release_ready_candidate` | Local Codex skill | TBD | TBD | Needs provenance check before copying. |
+| `storyboard-review` | `release_ready_candidate` | Local Codex skill | TBD | TBD | May optionally pair with `codex-video-vision` for actual video review. |
+| `thread-workspace-relink` | `release_ready_candidate` | Codex skill from toolkit | https://github.com/Adam-Bull/Codex-thread-toolkit | MIT | Include only with backup-first warnings and NOTICE entry. |
+| `video-perception` | `draft` | Claude video workflow adaptation plus Codex MCP/plugin | https://github.com/jordanrendric/claude-video-vision and https://github.com/EyrieCommander/codex-video-vision | MIT | Dependency-bound; skill alone is not install-complete. |
+| `source-intake` | `draft` | Local generalized workflow | TBD | TBD | Needs non-X dogfood pass and public-neutral examples. |
+| `x-thread-intake` | `draft` | Local workflow developed around XMCP/X Reader work | https://github.com/xdevplatform/xmcp | TBD | Keep as X/social adapter; sanitize before publication. |
+| `keep-codex-fast` | `external_link` | Existing public Codex skill | https://github.com/vibeforge1111/keep-codex-fast | MIT | Link-first. Fork or vendor only after safety/privacy review. |
+
+## Required Fields Before Release
+
+Every copied skill needs:
+
+- source URL or explicit local-authorship note;
+- license/provenance classification;
+- publication status;
+- private-path and private-example scrub;
+- safety boundary for any mutating behavior;
+- install/test notes if external tools are required.
