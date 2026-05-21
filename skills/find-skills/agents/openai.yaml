@@ -1,0 +1,4 @@
+interface:
+  display_name: "Find Skills"
+  short_description: "Scout local and ecosystem skills before installing carefully."
+  default_prompt: "Find skill options for this workflow, checking local skills first and treating installation as approval-bound."

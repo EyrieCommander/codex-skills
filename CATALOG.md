@@ -2,6 +2,7 @@
 
 | Skill | Status | Origin | Source URL | License | Notes |
 | --- | --- | --- | --- | --- | --- |
+| `find-skills` | `ready` | Vercel Labs skill adaptation | https://github.com/vercel-labs/skills | MIT | Copied with local-first discovery and approval-bound install safety changes; skills.sh metadata checked 2026-05-21. |
 | `humanize-writing` | `ready` | Claude skill port/adaptation | https://github.com/blader/humanizer | MIT | Copied with private voice prior removed; upstream metadata verified 2026-05-21. |
 | `startup-pressure-test` | `ready` | Local Codex skill | local authoring | MIT | Copied after privacy scan; no upstream source found during the packaging provenance pass. |
 | `storyboard-review` | `ready` | Local Codex skill | local authoring | MIT | Copied after privacy scan; optional dependency on `video-perception` / `codex-video-vision` for actual video inspection. |

@@ -4,6 +4,7 @@ This repository is MIT licensed. This file tracks upstream sources, ports, adapt
 
 ## Included Skills
 
+- `find-skills`: adapted from the MIT-licensed [`vercel-labs/skills`](https://github.com/vercel-labs/skills) `find-skills` skill listed on skills.sh. Skills.sh metadata was checked on 2026-05-21 and reported 1.6M installs, Vercel Labs source, and security audit badges. The packaged copy adds local-first discovery, broader scouting encouragement, and approval-bound installation safety.
 - `humanize-writing`: adapted from the MIT-licensed [`blader/humanizer`](https://github.com/blader/humanizer) Claude Code skill. Upstream GitHub metadata was checked on 2026-05-21 and reported MIT. The packaged copy removes the private local voice prior from the original local install.
 - `startup-pressure-test`: locally authored Codex workflow skill. No upstream source was found during the 2026-05-21 packaging provenance pass. Covered by this repository's MIT license.
 - `storyboard-review`: locally authored Codex workflow skill. No upstream source was found during the 2026-05-21 packaging provenance pass. Actual video inspection depends on separate video tooling such as `video-perception` / `codex-video-vision`. Covered by this repository's MIT license.

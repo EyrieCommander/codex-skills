@@ -10,6 +10,7 @@ This repository is currently a private `v0.1.0-preview` staging repo. The first 
 
 Current ready set:
 
+- `find-skills`
 - `humanize-writing`
 - `startup-pressure-test`
 - `storyboard-review`
