@@ -18,6 +18,16 @@ Current ready set:
 
 Draft or linked candidates stay in the catalog until they pass dependency, privacy, and safety review.
 
+## Ready Skills
+
+| Skill | What This Copy Adds |
+| --- | --- |
+| `find-skills` | Adapted from Vercel Labs; encourages frequent skill scouting while checking local skills first and requiring approval before global installs. |
+| `humanize-writing` | Adapted from `blader/humanizer`; removes the private local voice prior and keeps a generic voice-sample workflow. |
+| `startup-pressure-test` | Local Codex workflow for direct startup idea pressure-testing, packaged after a privacy scan. |
+| `storyboard-review` | Local Codex workflow for comparing a video render to a storyboard or script, with explicit caveats when video inspection tools are unavailable. |
+| `thread-workspace-relink` | Adapted from `Adam-Bull/Codex-thread-toolkit`; keeps dry-run/backup-first behavior, adds a Codex-close preference, and patches Python 3.9 annotation compatibility. |
+
 ## Install A Skill Locally
 
 Copy the skill folder into your Codex skills directory, then restart Codex or open a fresh session so the skill list reloads.
