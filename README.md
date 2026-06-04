@@ -12,6 +12,7 @@ Current ready set:
 
 - `find-skills`
 - `humanize-writing`
+- `keep-codex-fast`
 - `startup-pressure-test`
 - `storyboard-review`
 - `thread-workspace-relink`
@@ -24,6 +25,7 @@ Draft or linked candidates stay in the catalog until they pass dependency, priva
 | --- | --- |
 | `find-skills` | Adapted from Vercel Labs; encourages frequent skill scouting while checking local skills first and requiring approval before global installs. |
 | `humanize-writing` | Adapted from `blader/humanizer`; removes the private local voice prior and keeps a generic voice-sample workflow. |
+| `keep-codex-fast` | Vendored from the maintained `PrzemyslawKlys/keep-codex-fast` fork; keeps backup-first/report-first Codex state maintenance, improves restore command ergonomics for backup paths with spaces, and includes smoke tests. |
 | `startup-pressure-test` | Local Codex workflow for direct startup idea pressure-testing, packaged after a privacy scan. |
 | `storyboard-review` | Local Codex workflow for comparing a video render to a storyboard or script, with explicit caveats when video inspection tools are unavailable. |
 | `thread-workspace-relink` | Adapted from `Adam-Bull/Codex-thread-toolkit`; keeps dry-run/backup-first behavior, adds a Codex-close preference, and patches Python 3.9 annotation compatibility. |
