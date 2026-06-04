@@ -10,7 +10,7 @@
 | `video-perception` | `draft` | Claude video workflow adaptation plus Codex MCP/plugin | https://github.com/jordanrendric/claude-video-vision and https://github.com/EyrieCommander/codex-video-vision | MIT | Dependency-bound; skill alone is not install-complete. |
 | `source-intake` | `draft` | Local generalized workflow | TBD | MIT if included | Needs non-X dogfood pass and public-neutral examples. |
 | `x-skill` | `draft` | Local workflow developed around XMCP/X Reader work | https://github.com/xdevplatform/xmcp | TBD | Formerly tracked as `x-thread-intake`; keep as X/social adapter and sanitize before publication. |
-| `keep-codex-fast` | `external_link` | Existing public Codex skill | https://github.com/vibeforge1111/keep-codex-fast | MIT | Link-first. Fork or vendor only after safety/privacy review. |
+| `keep-codex-fast` | `ready` | Public Codex skill vendored from maintained fork | https://github.com/PrzemyslawKlys/keep-codex-fast | MIT | Vendored from the maintained fork after safety/privacy review; includes backup-first/report-first Codex local-state maintenance, executable restore scripts, copy-paste-safe restore commands for backup paths with spaces, and smoke tests. Original upstream: https://github.com/vibeforge1111/keep-codex-fast. |
 
 ## Required Fields Before Release
 
