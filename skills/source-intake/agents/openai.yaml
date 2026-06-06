@@ -1,0 +1,4 @@
+interface:
+  display_name: "Source Intake"
+  short_description: "Preserve inbound sources with provenance and careful propagation."
+  default_prompt: "Use $source-intake to capture this source, preserve provenance, and decide whether any project updates are justified."

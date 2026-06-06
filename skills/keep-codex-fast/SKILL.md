@@ -34,6 +34,7 @@ There are three modes:
 - Maintain: normal `--apply`; backs up, archives old sessions, moves stale worktrees, rotates logs, prunes dead config, and normalizes paths. It does not trim thread title/preview metadata.
 - Optional repair: `--apply --repair-thread-metadata-bloat`; shortens oversized SQLite display title/preview metadata after backup. The rollout transcript stays intact.
 - Optional malformed-task archive: `--apply --archive-malformed-local-tasks`; archives active no-user-event local task sessions with suspicious workspace roots such as `/` or OS temp folders after backup.
+- Optional closed spawned-child archive: `--apply --archive-closed-spawn-children`; archives active child sessions whose `thread_spawn_edges.status` is `closed`, are old enough, and are not pinned. Normal apply only reports these candidates.
 
 ## Default Workflow
 
@@ -50,6 +51,7 @@ python scripts/keep_codex_fast.py
    - largest active sessions
    - thread metadata bloat: active title/preview character totals, max title/preview lengths, and over-limit counts
    - malformed local task candidates: no-user-event active local tasks with suspicious workspace roots
+   - closed spawned-child candidates: completed subagent child sessions that are still active/unarchived
    - stale worktree candidates
    - log size
    - bad Windows `\\?\` path counts
@@ -110,6 +112,7 @@ If the user wants automation and the Codex app automation tool is available, cre
 - Reports heavy Node processes without killing them.
 - Reports pathological active thread titles and `first_user_message` previews. It only repairs them when the user explicitly opts in with `--repair-thread-metadata-bloat`.
 - Reports malformed active local task sessions with `has_user_event=0` and suspicious `cwd` values. It only archives them when the user explicitly opts in with `--archive-malformed-local-tasks`.
+- Reports closed spawned-child sessions whose `thread_spawn_edges.status` is `closed`, excluding pinned sessions and sessions outside `~/.codex/sessions`. It only archives them when the user explicitly opts in with `--archive-closed-spawn-children`.
 
 Report mode does none of those mutations. It only prints counts and pseudonymous candidates. Use `--details` when raw IDs, titles, or paths are needed for diagnosis.
 
@@ -123,6 +126,7 @@ Report mode does none of those mutations. It only prints counts and pseudonymous
 - When in doubt, leave a chat active or ask the user. Never archive a chat that is pinned, current, or explicitly marked as still needed without a handoff.
 - Treat title/preview repair as metadata repair only. The full rollout transcript remains in the session JSONL; bounded SQLite fields are for list/navigation display.
 - Treat malformed local task archiving as cleanup for synthetic/no-user-event sessions. It should not target normal chats with user events.
+- Treat closed spawned-child archiving as cleanup for completed subagent children only. It must not target open spawn edges, parent threads, pinned threads, or ordinary sidebar chats just because they are old.
 
 ## Thread Metadata Bloat
 
@@ -153,6 +157,24 @@ python scripts/keep_codex_fast.py --apply --archive-malformed-local-tasks
 ```
 
 That moves matching rollout JSONL files into `~/.codex/archived_sessions/`, marks those rows archived in SQLite, and writes a restore manifest/script. The predicate requires `has_user_event=0`, an active/unarchived thread, a suspicious `cwd`, and a rollout file under `~/.codex/sessions`.
+
+## Closed Spawned-Child Sessions
+
+Subagent-heavy workflows can leave many completed child sessions active in SQLite. These can add sidebar and thread-loading work even after the subagent work is finished. The safe predicate is narrow: `thread_spawn_edges.status = 'closed'`, the child thread is still active/unarchived, it is older than the configured age threshold, it is not pinned, and its rollout file is still under `~/.codex/sessions`.
+
+Report mode and normal apply mode only report these candidates. If the user explicitly opts in, after backups and only when Codex is not running, run:
+
+```bash
+python scripts/keep_codex_fast.py --apply --archive-closed-spawn-children
+```
+
+The default age threshold is one day. To be more conservative, raise it:
+
+```bash
+python scripts/keep_codex_fast.py --apply --archive-closed-spawn-children --closed-spawn-child-older-than-days 7
+```
+
+This moves matching rollout JSONL files into `~/.codex/archived_sessions/`, marks those child rows archived in SQLite, and writes a restore manifest/script. It does not archive open subagents, parent threads, pinned threads, or threads without a closed spawn edge.
 
 ## Handoff Doc + Reactivation Prompt
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Seppuku"
+  short_description: "End and archive this thread cleanly."
+  default_prompt: "/seppuku: stop this thread, leave any necessary handoff, and archive the conversation."
