@@ -219,6 +219,102 @@ def make_malformed_local_task_home(root: Path, *, include_archived_column: bool 
     }
 
 
+def make_closed_spawn_child_home(root: Path) -> dict[str, Path]:
+    codex_home = root / ".codex"
+    sessions = codex_home / "sessions" / "2026" / "01" / "01"
+    sessions.mkdir(parents=True)
+    closed_rollout = sessions / "rollout-2026-01-01T00-00-00-eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee.jsonl"
+    open_rollout = sessions / "rollout-2026-01-01T00-00-00-ffffffff-ffff-ffff-ffff-ffffffffffff.jsonl"
+    parent_rollout = sessions / "rollout-2026-01-01T00-00-00-99999999-9999-9999-9999-999999999999.jsonl"
+    closed_rollout.write_text('{"type":"closed-child"}\n', encoding="utf-8")
+    open_rollout.write_text('{"type":"open-child"}\n', encoding="utf-8")
+    parent_rollout.write_text('{"type":"parent"}\n', encoding="utf-8")
+
+    old = int(time.time() - 3 * 86400)
+    now = int(time.time())
+    (codex_home / ".codex-global-state.json").write_text('{"pinned-thread-ids":[]}', encoding="utf-8")
+    state_db = codex_home / "state_5.sqlite"
+    conn = sqlite3.connect(state_db)
+    conn.execute(
+        """
+        create table threads (
+            id text primary key,
+            title text,
+            first_user_message text,
+            rollout_path text,
+            cwd text,
+            created_at integer,
+            updated_at integer,
+            archived_at integer,
+            archived integer
+        )
+        """
+    )
+    conn.execute("create table thread_spawn_edges (parent_thread_id text, child_thread_id text primary key, status text)")
+    conn.executemany(
+        "insert into threads values (?,?,?,?,?,?,?,?,?)",
+        [
+            (
+                "99999999-9999-9999-9999-999999999999",
+                "Parent thread",
+                "Parent thread",
+                str(parent_rollout),
+                "/tmp/project",
+                old,
+                now,
+                None,
+                0,
+            ),
+            (
+                "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+                "Closed child",
+                "Closed child",
+                str(closed_rollout),
+                "/tmp/project",
+                old,
+                old,
+                None,
+                0,
+            ),
+            (
+                "ffffffff-ffff-ffff-ffff-ffffffffffff",
+                "Open child",
+                "Open child",
+                str(open_rollout),
+                "/tmp/project",
+                old,
+                old,
+                None,
+                0,
+            ),
+        ],
+    )
+    conn.executemany(
+        "insert into thread_spawn_edges values (?,?,?)",
+        [
+            (
+                "99999999-9999-9999-9999-999999999999",
+                "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+                "closed",
+            ),
+            (
+                "99999999-9999-9999-9999-999999999999",
+                "ffffffff-ffff-ffff-ffff-ffffffffffff",
+                "open",
+            ),
+        ],
+    )
+    conn.commit()
+    conn.close()
+    return {
+        "codex_home": codex_home,
+        "closed_rollout": closed_rollout,
+        "open_rollout": open_rollout,
+        "parent_rollout": parent_rollout,
+        "state_db": state_db,
+    }
+
+
 def latest_session_index_name(codex_home: Path, thread_id: str) -> str | None:
     path = codex_home / "session_index.jsonl"
     if not path.exists():
@@ -234,11 +330,36 @@ def latest_session_index_name(codex_home: Path, thread_id: str) -> str | None:
     return name
 
 
+def args_namespace(**overrides):
+    defaults = {
+        "apply": False,
+        "backup_only": False,
+        "details": False,
+        "wait_for_codex_exit": False,
+        "codex_home": None,
+        "backup_root": None,
+        "archive_older_than_days": 10,
+        "archive_age_field": "updated_at",
+        "archive_thread_id": [],
+        "archive_rollout_path": [],
+        "worktree_older_than_days": 7,
+        "rotate_logs_above_mb": 64,
+        "thread_title_limit": 120,
+        "thread_preview_limit": 240,
+        "repair_thread_metadata_bloat": False,
+        "archive_malformed_local_tasks": False,
+        "archive_closed_spawn_children": False,
+        "closed_spawn_child_older_than_days": 1,
+    }
+    defaults.update(overrides)
+    return argparse.Namespace(**defaults)
+
+
 def assert_report_mode(module) -> None:
     with tempfile.TemporaryDirectory() as td:
         paths = make_fake_home(Path(td))
         backup = Path(td) / "backup-report"
-        args = argparse.Namespace(
+        args = args_namespace(
             apply=False,
             backup_only=False,
             details=False,
@@ -281,7 +402,7 @@ def assert_backup_only_mode(module) -> None:
     with tempfile.TemporaryDirectory() as td:
         paths = make_fake_home(Path(td))
         backup = Path(td) / "backup-only"
-        args = argparse.Namespace(
+        args = args_namespace(
             apply=False,
             backup_only=True,
             details=False,
@@ -388,7 +509,7 @@ def assert_extended_path_normalization_targets_path_fields_and_config(module) ->
         conn.commit()
         conn.close()
 
-        args = argparse.Namespace(
+        args = args_namespace(
             apply=True,
             backup_only=False,
             details=False,
@@ -501,7 +622,7 @@ def assert_apply_mode(module) -> None:
             '{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","thread_name":"Friendly Agent","updated_at":"2026-01-01T00:00:00.000Z"}\n',
             encoding="utf-8",
         )
-        args = argparse.Namespace(
+        args = args_namespace(
             apply=True,
             backup_only=False,
             details=False,
@@ -563,7 +684,7 @@ def assert_repair_adds_bounded_name_when_no_existing_name(module) -> None:
     with tempfile.TemporaryDirectory() as td:
         paths = make_fake_home(Path(td))
         backup = Path(td) / "backup-repair-name"
-        args = argparse.Namespace(
+        args = args_namespace(
             apply=True,
             backup_only=False,
             details=False,
@@ -601,7 +722,7 @@ def assert_repair_restores_existing_name_when_title_is_already_bounded(module) -
             '{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","thread_name":"Friendly Agent","updated_at":"2026-01-01T00:00:00.000Z"}\n',
             encoding="utf-8",
         )
-        args = argparse.Namespace(
+        args = args_namespace(
             apply=True,
             backup_only=False,
             details=False,
@@ -632,7 +753,7 @@ def assert_normal_apply_does_not_repair_thread_metadata(module) -> None:
     with tempfile.TemporaryDirectory() as td:
         paths = make_fake_home(Path(td))
         backup = Path(td) / "backup-normal-apply"
-        args = argparse.Namespace(
+        args = args_namespace(
             apply=True,
             backup_only=False,
             details=False,
@@ -667,7 +788,7 @@ def assert_normal_apply_does_not_repair_thread_metadata(module) -> None:
 def assert_malformed_local_task_report_mode(module) -> None:
     with tempfile.TemporaryDirectory() as td:
         paths = make_malformed_local_task_home(Path(td))
-        args = argparse.Namespace(
+        args = args_namespace(
             apply=False,
             backup_only=False,
             details=False,
@@ -701,7 +822,7 @@ def assert_malformed_local_task_archive_is_explicit(module) -> None:
     with tempfile.TemporaryDirectory() as td:
         paths = make_malformed_local_task_home(Path(td))
         backup = Path(td) / "backup-apply"
-        args = argparse.Namespace(
+        args = args_namespace(
             apply=True,
             backup_only=False,
             details=False,
@@ -731,7 +852,7 @@ def assert_malformed_local_task_archive_mode(module) -> None:
     with tempfile.TemporaryDirectory() as td:
         paths = make_malformed_local_task_home(Path(td))
         backup = Path(td) / "backup-apply"
-        args = argparse.Namespace(
+        args = args_namespace(
             apply=True,
             backup_only=False,
             details=False,
@@ -786,7 +907,7 @@ def assert_malformed_local_task_archive_without_archived_column(module) -> None:
     with tempfile.TemporaryDirectory() as td:
         paths = make_malformed_local_task_home(Path(td), include_archived_column=False)
         backup = Path(td) / "backup-apply"
-        args = argparse.Namespace(
+        args = args_namespace(
             apply=True,
             backup_only=False,
             details=False,
@@ -837,6 +958,95 @@ def assert_malformed_local_task_archive_without_archived_column(module) -> None:
         assert paths["malformed_rollout"].exists()
 
 
+def assert_closed_spawn_child_archive_is_explicit(module) -> None:
+    with tempfile.TemporaryDirectory() as td:
+        paths = make_closed_spawn_child_home(Path(td))
+        backup = Path(td) / "backup-closed-child-report"
+        args = args_namespace(
+            apply=True,
+            backup_only=False,
+            codex_home=str(paths["codex_home"]),
+            backup_root=str(backup),
+            archive_older_than_days=99999,
+            worktree_older_than_days=99999,
+            rotate_logs_above_mb=64,
+            archive_closed_spawn_children=False,
+            closed_spawn_child_older_than_days=1,
+        )
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            assert module.run(args) == 0
+        text = output.getvalue()
+        assert "closed_spawn_child_candidates 1" in text
+        assert "closed_spawn_child_archive skipped_flag_required" in text
+        assert paths["closed_rollout"].exists()
+        assert paths["open_rollout"].exists()
+        assert not (backup / "moved-closed-spawn-children.jsonl").exists()
+
+
+def assert_closed_spawn_child_archive_mode(module) -> None:
+    with tempfile.TemporaryDirectory() as td:
+        paths = make_closed_spawn_child_home(Path(td))
+        backup = Path(td) / "backup-closed-child-archive"
+        args = args_namespace(
+            apply=True,
+            backup_only=False,
+            codex_home=str(paths["codex_home"]),
+            backup_root=str(backup),
+            archive_older_than_days=99999,
+            worktree_older_than_days=99999,
+            rotate_logs_above_mb=64,
+            archive_closed_spawn_children=True,
+            closed_spawn_child_older_than_days=1,
+        )
+        assert module.run(args) == 0
+
+        conn = sqlite3.connect(paths["state_db"])
+        closed = conn.execute(
+            "select archived, archived_at, rollout_path from threads where id=?",
+            ("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",),
+        ).fetchone()
+        open_child = conn.execute(
+            "select archived, archived_at, rollout_path from threads where id=?",
+            ("ffffffff-ffff-ffff-ffff-ffffffffffff",),
+        ).fetchone()
+        parent = conn.execute(
+            "select archived, archived_at, rollout_path from threads where id=?",
+            ("99999999-9999-9999-9999-999999999999",),
+        ).fetchone()
+        conn.close()
+
+        assert closed[0] == 1
+        assert closed[1] is not None
+        assert "archived_sessions" in closed[2]
+        assert open_child[0] == 0
+        assert open_child[1] is None
+        assert open_child[2] == str(paths["open_rollout"])
+        assert parent[0] == 0
+        assert parent[1] is None
+        assert parent[2] == str(paths["parent_rollout"])
+        assert not paths["closed_rollout"].exists()
+        assert paths["open_rollout"].exists()
+        assert paths["parent_rollout"].exists()
+        assert (backup / "moved-closed-spawn-children.jsonl").exists()
+
+        restore = backup / "restore-closed-spawn-children.py"
+        assert restore.exists()
+        namespace = {"__name__": "__main__"}
+        exec(restore.read_text(encoding="utf-8"), namespace)
+
+        conn = sqlite3.connect(paths["state_db"])
+        restored = conn.execute(
+            "select archived, archived_at, rollout_path from threads where id=?",
+            ("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",),
+        ).fetchone()
+        conn.close()
+        assert restored[0] == 0
+        assert restored[1] is None
+        assert restored[2] == str(paths["closed_rollout"])
+        assert paths["closed_rollout"].exists()
+
+
 def main() -> int:
     module = load_module()
     assert_report_mode(module)
@@ -851,6 +1061,8 @@ def main() -> int:
     assert_malformed_local_task_archive_is_explicit(module)
     assert_malformed_local_task_archive_mode(module)
     assert_malformed_local_task_archive_without_archived_column(module)
+    assert_closed_spawn_child_archive_is_explicit(module)
+    assert_closed_spawn_child_archive_mode(module)
     assert_repair_adds_bounded_name_when_no_existing_name(module)
     assert_repair_restores_existing_name_when_title_is_already_bounded(module)
     assert_apply_mode(module)

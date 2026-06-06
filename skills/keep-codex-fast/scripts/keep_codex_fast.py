@@ -18,7 +18,7 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
@@ -73,6 +73,20 @@ class MalformedLocalTaskCandidate:
 
 
 @dataclass
+class ClosedSpawnChildCandidate:
+    size: int
+    thread_id: str
+    parent_thread_id: str
+    title: str
+    source: Path
+    relative: Path
+    created_at: int | None
+    updated_at: int | None
+    age_days: float | None
+    reason: str
+
+
+@dataclass
 class ThreadMetadataRepair:
     thread_id: str
     old_title: str
@@ -86,7 +100,7 @@ def now_stamp() -> str:
 
 
 def utc_now_z() -> str:
-    return datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 def codex_home_from_args(value: str | None) -> Path:
@@ -872,6 +886,137 @@ def archive_malformed_local_tasks(
     report(f"malformed_local_task_manifest {manifest}")
 
 
+def closed_spawn_child_candidates(
+    conn: sqlite3.Connection,
+    codex_home: Path,
+    older_than_days: int,
+) -> list[ClosedSpawnChildCandidate]:
+    edge_columns = table_columns(conn, "thread_spawn_edges")
+    edge_required = {"parent_thread_id", "child_thread_id", "status"}
+    missing_edge = edge_required - edge_columns
+    if missing_edge:
+        report(f"closed_spawn_child_skipped_missing_edge_columns {','.join(sorted(missing_edge))}")
+        return []
+
+    columns = table_columns(conn, "threads")
+    required = {"id", "title", "rollout_path", "updated_at"}
+    missing = required - columns
+    if missing:
+        report(f"closed_spawn_child_skipped_missing_threads_columns {','.join(sorted(missing))}")
+        return []
+
+    sessions_root = codex_home / "sessions"
+    sessions_root_canonical = canonical_path(sessions_root)
+    pinned = load_pinned(codex_home)
+    cutoff = int(time.time() - older_than_days * 24 * 60 * 60)
+    created_at_expr = "child.created_at" if "created_at" in columns else "NULL"
+    active_expr = "COALESCE(child.archived,0)=0" if "archived" in columns else "child.archived_at is null"
+    rows = conn.execute(
+        f"""
+        select child.id, edge.parent_thread_id, child.title, child.rollout_path,
+               {created_at_expr}, child.updated_at
+        from thread_spawn_edges edge
+        join threads child on child.id = edge.child_thread_id
+        where edge.status = 'closed'
+          and {active_expr}
+          and child.rollout_path <> ''
+          and (child.updated_at is null or child.updated_at < ?)
+        """,
+        (cutoff,),
+    ).fetchall()
+
+    candidates: list[ClosedSpawnChildCandidate] = []
+    for thread_id, parent_thread_id, title, rollout_path, created_at, updated_at in rows:
+        thread_id = str(thread_id)
+        if thread_id in pinned:
+            continue
+        source = normalized_path(rollout_path)
+        if not source.exists():
+            continue
+        try:
+            relative = canonical_path(source).relative_to(sessions_root_canonical)
+        except ValueError:
+            continue
+        if updated_at is None:
+            age_days = None
+        else:
+            age_days = max(0.0, (time.time() - int(updated_at)) / 86400)
+        candidates.append(
+            ClosedSpawnChildCandidate(
+                source.stat().st_size,
+                thread_id,
+                str(parent_thread_id),
+                title or "",
+                source,
+                relative,
+                created_at,
+                updated_at,
+                age_days,
+                f"closed_spawn_child_older_than_{older_than_days}d",
+            )
+        )
+    candidates.sort(key=lambda item: item.size, reverse=True)
+    return candidates
+
+
+def archive_closed_spawn_children(
+    conn: sqlite3.Connection,
+    candidates: list[ClosedSpawnChildCandidate],
+    codex_home: Path,
+    backup_root: Path,
+    stamp: str,
+    apply: bool,
+    details: bool,
+) -> None:
+    total = sum(item.size for item in candidates)
+    report(f"closed_spawn_child_candidates {len(candidates)}")
+    report(f"closed_spawn_child_candidate_gb {gb(total)}")
+    for index, item in enumerate(candidates[:10], start=1):
+        label = f"closed_spawn_child_{index:03d}"
+        age = "unknown" if item.age_days is None else f"{item.age_days:.1f}"
+        if details:
+            report(
+                f"closed_spawn_child_candidate {label} thread_id={item.thread_id} "
+                f"parent_thread_id={item.parent_thread_id} age_days={age} title={item.title[:70]}"
+            )
+        else:
+            report(f"closed_spawn_child_candidate {label} age_days={age}")
+    if not apply or not candidates:
+        return
+
+    archive_root = codex_home / "archived_sessions" / f"closed-spawn-children-{stamp}"
+    manifest = backup_root / "moved-closed-spawn-children.jsonl"
+    archive_root.mkdir(parents=True, exist_ok=True)
+    now = int(time.time())
+    cur = conn.cursor()
+    columns = table_columns(conn, "threads")
+    with manifest.open("w", encoding="utf-8") as handle:
+        for item in candidates:
+            dest = archive_root / item.relative
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(item.source), str(dest))
+            record = {
+                "thread_id": item.thread_id,
+                "parent_thread_id": item.parent_thread_id,
+                "bytes": item.size,
+                "reason": item.reason,
+                "from": str(item.source),
+                "to": str(dest),
+                "created_at": item.created_at,
+                "updated_at": item.updated_at,
+            }
+            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+            archive_thread_row(cur, columns, rollout_path=str(dest), archived_at=now, thread_id=item.thread_id)
+    write_session_restore_script(
+        manifest,
+        codex_home / "state_5.sqlite",
+        backup_root,
+        restore_name="restore-closed-spawn-children.py",
+    )
+    report(f"closed_spawn_child_archive_root {archive_root}")
+    report(f"closed_spawn_child_manifest {manifest}")
+
+
 def write_session_restore_script(
     manifest: Path,
     state_db: Path,
@@ -1126,6 +1271,22 @@ def run(args: argparse.Namespace) -> int:
         )
         if effective_apply and malformed_candidates and not getattr(args, "archive_malformed_local_tasks", False):
             report("malformed_local_task_archive skipped_flag_required")
+        closed_spawn_candidates = closed_spawn_child_candidates(
+            conn,
+            codex_home,
+            args.closed_spawn_child_older_than_days,
+        )
+        archive_closed_spawn_children(
+            conn,
+            closed_spawn_candidates,
+            codex_home,
+            backup_root,
+            stamp,
+            effective_apply and getattr(args, "archive_closed_spawn_children", False),
+            args.details,
+        )
+        if effective_apply and closed_spawn_candidates and not getattr(args, "archive_closed_spawn_children", False):
+            report("closed_spawn_child_archive skipped_flag_required")
         candidates = active_session_candidates(
             conn,
             codex_home,
@@ -1228,6 +1389,20 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "such as / or OS temp folders. Default --apply only reports candidates."
         ),
     )
+    parser.add_argument(
+        "--archive-closed-spawn-children",
+        action="store_true",
+        help=(
+            "With --apply, archive active child sessions whose thread_spawn_edges status is closed. "
+            "Default --apply only reports candidates."
+        ),
+    )
+    parser.add_argument(
+        "--closed-spawn-child-older-than-days",
+        type=int,
+        default=1,
+        help="Minimum updated_at age for --archive-closed-spawn-children candidates. Defaults to 1 day.",
+    )
     args = parser.parse_args(argv)
     if args.apply and args.backup_only:
         parser.error("--apply and --backup-only cannot be used together")
@@ -1236,6 +1411,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             parser.error(f"--archive-thread-id must be a UUID-like thread id: {thread_id}")
     if args.archive_older_than_days < 0:
         parser.error("--archive-older-than-days must be non-negative")
+    if args.closed_spawn_child_older_than_days < 0:
+        parser.error("--closed-spawn-child-older-than-days must be non-negative")
     if args.thread_title_limit < 20:
         parser.error("--thread-title-limit must be at least 20")
     if args.thread_preview_limit < args.thread_title_limit:

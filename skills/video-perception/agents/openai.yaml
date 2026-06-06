@@ -1,0 +1,4 @@
+interface:
+  display_name: "Video Perception"
+  short_description: "Inspect and summarize video content with Codex video tools."
+  default_prompt: "Use $video-perception to inspect this video and answer with timestamped evidence."
