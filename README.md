@@ -4,6 +4,8 @@ A practical bundle of Codex skills for people who want their agents to get bette
 
 This repository collects field-tested skills that make Codex more useful for long-lived project work: source capture, writing cleanup, PDF and video review, local Codex maintenance, workspace recovery, and structured idea critique.
 
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/00472674-bab3-49a9-9b49-9bdb9438de51" />
+
 ## What's Included
 
 | Skill | Use It When |
